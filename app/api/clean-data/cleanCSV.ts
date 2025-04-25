@@ -17,11 +17,13 @@ export interface CleanCSVResult {
   };
 }
 
-function detectType(value: any): string {
+type CSVRow = Record<string, string>;
+
+function detectType(value: unknown): string {
   if (value === null || value === undefined || value === "") return "null";
   if (typeof value === "boolean") return "boolean";
-  if (!isNaN(Date.parse(value))) return "date";
-  if (!isNaN(parseFloat(value)) && isFinite(value)) return "number";
+  if (!isNaN(Date.parse(String(value)))) return "date";
+  if (!isNaN(parseFloat(String(value))) && isFinite(Number(value))) return "number";
   if (typeof value === "string") {
     try {
       const parsed = JSON.parse(value);
@@ -31,7 +33,7 @@ function detectType(value: any): string {
   return "string";
 }
 
-function guessColumnType(values: any[]): string {
+function guessColumnType(values: unknown[]): string {
   const typeCounts: Record<string, number> = {};
   values.forEach((val) => {
     const type = detectType(val);
@@ -47,7 +49,7 @@ export function cleanCSV(rawCSV: string): CleanCSVResult {
     dynamicTyping: false,
   });
 
-  const rows = result.data as any[];
+  const rows = result.data as CSVRow[];
   const fields = result.meta.fields || [];
 
   const issues: RowIssue[] = [];
@@ -69,7 +71,7 @@ export function cleanCSV(rawCSV: string): CleanCSVResult {
     columnValueMap[field] = new Set();
   }
 
-  const cleanedRows: any[] = [];
+  const cleanedRows: CSVRow[] = [];
 
   rows.forEach((row, i) => {
     const rowIssues: string[] = [];

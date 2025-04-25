@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   let missingCount = 0;
   let invalidCount = 0;
 
-  rows = rows.map((row: string[], rowIndex) =>
+  rows = rows.map((row: string[]) =>
     row.map((val: string, colIndex: number): string => {
       if (val === '') {
         missingCount++;

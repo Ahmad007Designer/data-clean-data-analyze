@@ -3,12 +3,20 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse';
 
+type CSVData = string[][];
+
+interface CleaningOptions {
+  missing: 'average' | 'placeholder' | 'none';
+  duplicates: 'remove' | 'none';
+  invalids: 'highlight' | 'remove' | 'none';
+}
+
 export default function DataCleanerPage() {
-  const [csvData, setCsvData] = useState<any[][] | null>(null);
-  const [cleanedData, setCleanedData] = useState<any[][] | null>(null);
+  const [csvData, setCsvData] = useState<CSVData | null>(null);
+  const [cleanedData, setCleanedData] = useState<CSVData | null>(null);
   const [changeLog, setChangeLog] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [options, setOptions] = useState({
+  const [options, setOptions] = useState<CleaningOptions>({
     missing: 'average',
     duplicates: 'remove',
     invalids: 'highlight',
@@ -18,26 +26,26 @@ export default function DataCleanerPage() {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const { data } = Papa.parse(text, {
-        header: false, // Accept any data structure
+      const { data } = Papa.parse<string[]>(text, {
+        header: false,
         skipEmptyLines: true,
       });
-      setCsvData(data as any[][]);
+      setCsvData(data as CSVData);
     };
     reader.readAsText(file);
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const pasted = e.clipboardData.getData('text');
-    const result = Papa.parse(pasted.trim(), {
+    const result = Papa.parse<string[]>(pasted.trim(), {
       header: false,
       skipEmptyLines: true,
     });
-    setCsvData(result.data as any[][]);
+    setCsvData(result.data as CSVData);
     setCleanedData(null);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files[0];
@@ -51,7 +59,7 @@ export default function DataCleanerPage() {
       headers: { 'Content-Type': 'application/json' },
     });
     const result = await res.json();
-    setCleanedData(result.cleaned);
+    setCleanedData(result.cleaned as CSVData);
     setChangeLog(result.changeLog || []);
   };
 
@@ -105,7 +113,9 @@ export default function DataCleanerPage() {
               <select
                 className="w-full border p-2"
                 value={options.missing}
-                onChange={(e) => setOptions((o) => ({ ...o, missing: e.target.value }))}
+                onChange={(e) =>
+                  setOptions((o) => ({ ...o, missing: e.target.value as CleaningOptions['missing'] }))
+                }
               >
                 <option value="average">Fill with zero</option>
                 <option value="placeholder">Fill with placeholder</option>
@@ -118,7 +128,9 @@ export default function DataCleanerPage() {
               <select
                 className="w-full border p-2"
                 value={options.duplicates}
-                onChange={(e) => setOptions((o) => ({ ...o, duplicates: e.target.value }))}
+                onChange={(e) =>
+                  setOptions((o) => ({ ...o, duplicates: e.target.value as CleaningOptions['duplicates'] }))
+                }
               >
                 <option value="remove">Remove Duplicates</option>
                 <option value="none">Ignore</option>
@@ -130,7 +142,9 @@ export default function DataCleanerPage() {
               <select
                 className="w-full border p-2"
                 value={options.invalids}
-                onChange={(e) => setOptions((o) => ({ ...o, invalids: e.target.value }))}
+                onChange={(e) =>
+                  setOptions((o) => ({ ...o, invalids: e.target.value as CleaningOptions['invalids'] }))
+                }
               >
                 <option value="highlight">Highlight for review</option>
                 <option value="remove">Remove</option>
@@ -155,7 +169,7 @@ export default function DataCleanerPage() {
             <table className="table-auto w-full text-sm border-collapse">
               <thead className="bg-gray-100 sticky top-0">
                 <tr>
-                  {cleanedData[0].map((col, i) => (
+                  {cleanedData[0].map((_, i) => (
                     <th key={i} className="border p-2">{`Column ${i + 1}`}</th>
                   ))}
                 </tr>
