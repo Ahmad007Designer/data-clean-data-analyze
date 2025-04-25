@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 
-function isNumeric(value: string) {
+// Utility functions
+function isNumeric(value: string): boolean {
   return !isNaN(Number(value));
 }
 
-function isEmail(value: string) {
+function isEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-function getRandomEmail() {
+function getRandomEmail(): string {
   const names = ['alice', 'bob', 'charlie', 'dave', 'emma', 'john', 'lisa'];
   const domains = ['example.com', 'mail.com', 'test.org'];
   const name = names[Math.floor(Math.random() * names.length)];
@@ -16,12 +17,17 @@ function getRandomEmail() {
   return `${name}${Math.floor(Math.random() * 100)}@${domain}`;
 }
 
-function getRandomNumber(min = 20, max = 100000) {
+function getRandomNumber(min = 20, max = 100000): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Define the structure of request data
+interface CleanCSVRequest {
+  csvData: string[][];
+}
+
 export async function POST(req: Request) {
-  const body = await req.json();
+  const body: CleanCSVRequest = await req.json();
   const { csvData } = body;
 
   const changeLog: string[] = [];
@@ -36,21 +42,18 @@ export async function POST(req: Request) {
   let missingCount = 0;
   let invalidCount = 0;
 
-  rows = rows.map((row: string[], rowIndex: number) =>
-    row.map((val, colIndex) => {
-      // Fill missing with "0"
+  rows = rows.map((row: string[], rowIndex) =>
+    row.map((val: string, colIndex: number): string => {
       if (val === '') {
         missingCount++;
         return '0';
       }
 
-      // Fix invalid email
       if (colIndex === 3 && !isEmail(val)) {
         invalidCount++;
         return getRandomEmail();
       }
 
-      // Fix invalid number in numeric columns
       if ((colIndex === 2 || colIndex === 4) && !isNumeric(val)) {
         invalidCount++;
         return getRandomNumber().toString();
@@ -60,10 +63,13 @@ export async function POST(req: Request) {
     })
   );
 
-  if (missingCount > 0) changeLog.push(`Replaced ${missingCount} missing value(s) with 0`);
-  if (invalidCount > 0) changeLog.push(`Replaced ${invalidCount} invalid value(s) with random valid values`);
+  if (missingCount > 0)
+    changeLog.push(`Replaced ${missingCount} missing value(s) with 0`);
+  if (invalidCount > 0)
+    changeLog.push(
+      `Replaced ${invalidCount} invalid value(s) with random valid values`
+    );
 
-  // Remove duplicate rows (excluding header)
   const seen = new Set<string>();
   const filteredRows: string[][] = [];
 
@@ -76,7 +82,8 @@ export async function POST(req: Request) {
   }
 
   const removed = rows.length - filteredRows.length;
-  if (removed > 0) changeLog.push(`Removed ${removed} duplicate row(s)`);
+  if (removed > 0)
+    changeLog.push(`Removed ${removed} duplicate row(s)`);
 
   const cleaned = [header, ...filteredRows];
 

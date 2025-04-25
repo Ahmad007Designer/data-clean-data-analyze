@@ -14,12 +14,13 @@ import {
 } from "recharts";
 
 export default function UploadCSV() {
-  const [rawCsv, setRawCsv] = useState("");
-  const [cleanedCsv, setCleanedCsv] = useState("");
+  const [rawCsv, setRawCsv] = useState<string>("");
+  const [cleanedCsv, setCleanedCsv] = useState<string>("");
   const [issues, setIssues] = useState<{ row: number; issues: string[] }[]>([]);
   const [jobStatus, setJobStatus] = useState<string>("idle");
   const [beforeData, setBeforeData] = useState<string>("");
   const [afterData, setAfterData] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -30,12 +31,18 @@ export default function UploadCSV() {
       const text = reader.result as string;
       setRawCsv(text);
       setBeforeData(text); // Save the raw data as 'before' data for comparison
+      setIssues([]); // Reset issues on new upload
+      setJobStatus("idle");
+      setCleanedCsv("");
+      setAfterData("");
+      setError(null);
     };
     reader.readAsText(file);
   };
 
   const handleClean = async () => {
     try {
+      setJobStatus("processing");
       const res = await fetch("/api/clean-data", {
         method: "POST",
         body: JSON.stringify({ csv: rawCsv }),
@@ -48,7 +55,6 @@ export default function UploadCSV() {
 
       const data = await res.json();
       setIssues(data.issues);
-      setJobStatus("processing");
 
       // Poll the backend for job status
       const checkJobStatus = setInterval(async () => {
@@ -64,7 +70,8 @@ export default function UploadCSV() {
       }, 2000); // Poll every 2 seconds
     } catch (error) {
       console.error("Error cleaning CSV:", error);
-      alert("Failed to clean CSV data. Check if the server is running and API exists.");
+      setJobStatus("idle");
+      setError("Failed to clean CSV data. Check if the server is running and API exists.");
     }
   };
 
@@ -119,6 +126,7 @@ export default function UploadCSV() {
         <button
           onClick={handleClean}
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded shadow-md transition-all"
+          disabled={jobStatus === "processing"}
         >
           Analyze Data
         </button>
@@ -132,6 +140,8 @@ export default function UploadCSV() {
           </pre>
         </div>
       </div>
+
+      {error && <div className="mt-4 text-red-600">{error}</div>}
 
       {issues.length > 0 && (
         <>
@@ -242,22 +252,22 @@ export default function UploadCSV() {
             <div className="bg-white shadow-md rounded-lg p-4 border">
               <h4 className="text-lg font-bold text-blue-600 mb-2">After</h4>
               <pre className="whitespace-pre-wrap text-sm text-black bg-gray-100 rounded p-3 overflow-auto max-h-96">
-                {afterData || "No cleaned data"}
+                {afterData || "No data"}
               </pre>
             </div>
           </div>
-          <div className="mt-6 flex gap-4">
-            <button
-              onClick={handleCopy}
-              className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 rounded shadow-md transition-all"
-            >
-              Copy Cleaned Data
-            </button>
+          <div className="mt-6">
             <button
               onClick={handleDownload}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded shadow-md transition-all"
+              className="bg-green-600 text-white font-bold px-4 py-2 rounded-lg mr-4"
             >
               Download Cleaned Data
+            </button>
+            <button
+              onClick={handleCopy}
+              className="bg-gray-600 text-white font-bold px-4 py-2 rounded-lg"
+            >
+              Copy Cleaned Data
             </button>
           </div>
         </div>

@@ -19,7 +19,7 @@ export default function DataCleanerPage() {
     reader.onload = (e) => {
       const text = e.target?.result as string;
       const { data } = Papa.parse(text, {
-        header: false, // << Accept any data structure
+        header: false, // Accept any data structure
         skipEmptyLines: true,
       });
       setCsvData(data as any[][]);
@@ -71,9 +71,7 @@ export default function DataCleanerPage() {
       <h1 className="text-2xl font-bold text-blue-600">Upload Your CSV</h1>
 
       <div
-        className={`border-2 border-dashed p-6 rounded-xl text-center ${
-          dragging ? 'bg-blue-50 border-blue-500' : 'border-gray-300'
-        }`}
+        className={`border-2 border-dashed p-6 rounded-xl text-center ${dragging ? 'bg-blue-50 border-blue-500' : 'border-gray-300'}`}
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
@@ -184,7 +182,7 @@ export default function DataCleanerPage() {
           {changeLog.length > 0 && (
             <div className="mt-6">
               <h3 className="text-xl font-semibold text-yellow-600">Change Log</h3>
-              <ul className="list-disc pl-6 text-xl text-white">
+              <ul className="list-disc pl-6 text-xl text-black">
                 {changeLog.map((log, idx) => (
                   <li key={idx}>{log}</li>
                 ))}

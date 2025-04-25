@@ -61,7 +61,7 @@ export function cleanCSV(rawCSV: string): CleanCSVResult {
     duplicateRow: 0,
   };
 
-  // Infer column types from sample
+  // Infer column types from a sample
   const sampleSize = Math.min(rows.length, 50);
   for (const field of fields) {
     const sampleValues = rows.slice(0, sampleSize).map((r) => r[field]);
@@ -87,16 +87,19 @@ export function cleanCSV(rawCSV: string): CleanCSVResult {
       const val = (typeof rawVal === "string" ? rawVal.trim() : String(rawVal ?? "").trim());
       const expectedType = columnTypes[field];
 
+      // Check for missing values
       if (val === "" || val.toLowerCase() === "null" || val.toLowerCase() === "undefined") {
         rowIssues.push(`Missing value in "${field}"`);
         issueCounts.missing++;
       } else {
         const actualType = detectType(val);
+        // Check for invalid data type
         if (actualType !== expectedType && expectedType !== "string") {
           rowIssues.push(`Expected ${expectedType} but got ${actualType} in "${field}"`);
           issueCounts.invalidData++;
         }
 
+        // Check for duplicate values
         if (columnValueMap[field].has(val)) {
           rowIssues.push(`Duplicate value "${val}" in "${field}"`);
           issueCounts.duplicateValue++;
@@ -105,6 +108,7 @@ export function cleanCSV(rawCSV: string): CleanCSVResult {
         }
       }
 
+      // Clean up the value
       row[field] = val;
     }
 
